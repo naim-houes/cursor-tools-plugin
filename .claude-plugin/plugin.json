@@ -1,7 +1,7 @@
 {
   "name": "cursor-tools",
-  "description": "Delegate implementation and code review to Cursor's agent CLI. Claude orchestrates, Cursor executes via composer-2-fast (implementation) and GPT-5.4 (review).",
-  "version": "1.1.0",
+  "description": "Hybrid AI workflow: brainstorm with Claude, implement with Cursor (composer-2-fast), review with GPT-5.4. Drop-in replacement for superpowers brainstorming and execution.",
+  "version": "2.0.0",
   "author": {
     "name": "naim-houes"
   }

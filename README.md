@@ -1,32 +1,51 @@
 # cursor-tools
 
-Claude Code plugin that delegates implementation tasks to Cursor's `agent` CLI. Claude handles planning and review, Cursor handles cheap/fast implementation via `composer-2-fast`.
+Hybrid AI workflow plugin for Claude Code. Claude brainstorms and orchestrates, Cursor implements cheaply, GPT-5.4 reviews.
+
+**Replaces:** `superpowers:brainstorming` + `superpowers:subagent-driven-development`
 
 ## Skills
 
-| Skill | Model | Purpose |
-|-------|-------|---------|
-| **cursor-delegate** | `composer-2-fast` | Delegate implementation tasks to Cursor |
-| **cursor-superpowers** | `composer-2-fast` | Integration with superpowers plan execution |
-| **cursor-review** | `gpt-5.4-medium` | Multi-angle code review via GPT-5.4 |
+| Skill | Engine | Model | Purpose |
+|-------|--------|-------|---------|
+| **cursor-brainstorm** | Claude (native) | current | Design dialogue → spec → plan |
+| **cursor-execute** | Cursor + Claude | routing table | Execute plan: Cursor for simple, Claude for complex |
+| **cursor-delegate** | Cursor agent CLI | `composer-2-fast` | Core delegation mechanism |
+| **cursor-review** | Cursor agent CLI | `gpt-5.4-medium` | Multi-angle code review |
 
-### cursor-delegate
+### Workflow
 
-Core delegation mechanism. Claude gathers context, crafts a prompt, spawns Cursor's `agent` CLI, waits, reviews the output, and fixes if needed.
+```
+cursor-brainstorm                    cursor-execute
+(Claude native)                      (hybrid routing)
 
-### cursor-superpowers
+1. Explore context                   For each task:
+2. Ask questions (1 at a time)        ├─ Simple? → Cursor (composer-2-fast)
+3. Propose 2-3 approaches            ├─ Complex? → Claude (native)
+4. Present design                     ├─ Spec review → Cursor (gpt-5.4)
+5. Write spec                         ├─ Quality review → Cursor (gpt-5.4)
+6. Write plan                         ├─ Fix issues → Cursor or Edit
+7. → cursor-execute                   └─ Mark complete
+```
 
-Integration with `superpowers:subagent-driven-development`. Replaces native implementer subagent dispatch with Cursor agent CLI calls.
+### Routing Table
 
-### cursor-review
-
-Comprehensive code review using GPT-5.4 (1M context). Spawns 3 parallel review agents (bug scan, CLAUDE.md compliance, architecture), filters false positives (confidence < 80), and presents findings. Uses `--mode ask` (read-only).
+| Role | Engine | Model |
+|------|--------|-------|
+| Brainstorming | Claude (native) | current |
+| Planning | Claude (native) | current |
+| Implementation (simple) | Cursor agent CLI | `composer-2-fast` |
+| Implementation (complex) | Claude (native) | current |
+| Spec review | Cursor agent CLI | `gpt-5.4-medium` |
+| Code quality review | Cursor agent CLI | `gpt-5.4-medium` |
+| Fix from review | Cursor agent CLI | `composer-2-fast` |
+| Debugging | Claude (native) | current |
 
 ## Prerequisites
 
 - [Cursor agent CLI](https://cursor.com/install): `curl https://cursor.com/install -fsSL | bash`
-- Cursor account authenticated: `agent login`
-- Cursor Ultra subscription (for fast credits)
+- Authenticated: `agent login`
+- Cursor Ultra subscription
 
 ## Install
 
@@ -38,4 +57,6 @@ claude plugin install cursor-tools
 ## Key Rules
 
 - **Implementation:** Always `composer-2-fast`. Too complex? Claude handles it directly.
-- **Review:** Default `gpt-5.4-medium`. User can override to any model.
+- **Review:** Default `gpt-5.4-medium` via `--mode ask` (read-only).
+- **No code before design approval.** Brainstorm first, always.
+- **Always review.** Never trust Cursor output blindly.
