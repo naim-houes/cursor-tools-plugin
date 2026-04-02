@@ -7,8 +7,8 @@
     {
       "name": "cursor-tools",
       "source": {
-        "source": "github",
-        "repo": "naim-houes/cursor-tools-plugin"
+        "source": "url",
+        "url": "https://github.com/naim-houes/cursor-tools-plugin.git"
       },
       "description": "Hybrid AI workflow: brainstorm with Claude, implement with Cursor (composer-2-fast), review with GPT-5.4.",
       "version": "2.0.0"
