@@ -4,19 +4,23 @@ Claude Code plugin that delegates implementation tasks to Cursor's `agent` CLI. 
 
 ## Skills
 
+| Skill | Model | Purpose |
+|-------|-------|---------|
+| **cursor-delegate** | `composer-2-fast` | Delegate implementation tasks to Cursor |
+| **cursor-superpowers** | `composer-2-fast` | Integration with superpowers plan execution |
+| **cursor-review** | `gpt-5.4-medium` | Multi-angle code review via GPT-5.4 |
+
 ### cursor-delegate
 
-Core delegation mechanism. Claude:
-1. Gathers context (reads relevant files)
-2. Crafts a specific prompt (file paths, patterns, constraints)
-3. Runs `agent -p --force --trust --model composer-2-fast --output-format json "..."`
-4. Waits for completion (JSON result with duration, tokens, session ID)
-5. Reviews changed files
-6. Fixes if needed (`--continue`, direct Edit, or fresh run)
+Core delegation mechanism. Claude gathers context, crafts a prompt, spawns Cursor's `agent` CLI, waits, reviews the output, and fixes if needed.
 
 ### cursor-superpowers
 
-Integration with `superpowers:subagent-driven-development`. Replaces the native implementer subagent dispatch with Cursor agent CLI calls while keeping native reviewer subagents.
+Integration with `superpowers:subagent-driven-development`. Replaces native implementer subagent dispatch with Cursor agent CLI calls.
+
+### cursor-review
+
+Comprehensive code review using GPT-5.4 (1M context). Spawns 3 parallel review agents (bug scan, CLAUDE.md compliance, architecture), filters false positives (confidence < 80), and presents findings. Uses `--mode ask` (read-only).
 
 ## Prerequisites
 
@@ -27,9 +31,11 @@ Integration with `superpowers:subagent-driven-development`. Replaces the native 
 ## Install
 
 ```bash
-/plugin install cursor-tools@github:naim-houes/cursor-tools-plugin
+claude plugin marketplace add naim-houes/cursor-tools-plugin
+claude plugin install cursor-tools
 ```
 
-## Key Rule
+## Key Rules
 
-Always use `composer-2-fast`. If a task is too complex for it, Claude handles it directly instead of upgrading the Cursor model.
+- **Implementation:** Always `composer-2-fast`. Too complex? Claude handles it directly.
+- **Review:** Default `gpt-5.4-medium`. User can override to any model.

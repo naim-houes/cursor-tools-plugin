@@ -10,8 +10,8 @@
         "source": "github",
         "repo": "naim-houes/cursor-tools-plugin"
       },
-      "description": "Delegate implementation tasks to Cursor's agent CLI. Claude plans and reviews, Cursor implements via composer-2-fast.",
-      "version": "1.0.0"
+      "description": "Delegate implementation and code review to Cursor's agent CLI. Claude orchestrates, Cursor executes via composer-2-fast (implementation) and GPT-5.4 (review).",
+      "version": "1.1.0"
     }
   ]
 }
