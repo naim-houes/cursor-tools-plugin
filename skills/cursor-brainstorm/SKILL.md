@@ -2,59 +2,195 @@
 name: cursor-brainstorm
 description: >
   Use before any creative work — creating features, building components, adding
-  functionality, or modifying behavior. Explores intent, requirements, and design
-  through dialogue, then transitions to cursor-execute for implementation.
+  functionality, or modifying behavior. Explores user intent, requirements and
+  design before implementation. Integrates Cursor agent for codebase exploration,
+  spec review, and execution.
 ---
 
-# Cursor Brainstorm
+# Brainstorming Ideas Into Designs
 
-## Overview
+Help turn ideas into fully formed designs and specs through natural collaborative dialogue. Integrates Cursor agent CLI for codebase exploration and spec review, then transitions to `cursor-tools:cursor-execute` for implementation.
 
-Collaborative design dialogue leading to a spec, then Cursor-powered implementation. Claude handles the entire brainstorming process natively. Only implementation is delegated.
+Start by delegating codebase exploration to Cursor, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
 
 <HARD-GATE>
-Do NOT write any code, spawn any Cursor agent, or take any implementation action until you have presented a design and the user has approved it.
+Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
 </HARD-GATE>
+
+## Anti-Pattern: "This Is Too Simple To Need A Design"
+
+Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+
+## Cursor Integration
+
+| Phase | Engine | Model |
+|-------|--------|-------|
+| 1. Explore context | **Cursor** `--mode ask` | `composer-2-fast` |
+| 2-5. Questions, design, spec | Claude native | current |
+| 6. Spec review | **Claude OR Cursor** `--mode ask` | user's choice |
+| 7. User reviews | (user) | |
+| 8. Write plan | Claude native | current |
+| 9. Execute | **cursor-execute** | routing table |
 
 ## Checklist
 
-Complete in order:
+You MUST create a task for each of these items and complete them in order:
 
-1. **Explore project context** — read files, docs, recent commits
-2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-3. **Propose 2-3 approaches** — with trade-offs and your recommendation
-4. **Present design** — in sections scaled to complexity, get user approval after each
-5. **Write spec** — save to `docs/specs/YYYY-MM-DD-<topic>-design.md`, commit
-6. **Spec self-review** — check for placeholders, contradictions, ambiguity, scope
-7. **User reviews spec** — ask user to review before proceeding
-8. **Write implementation plan** — break into independent tasks with file paths
-9. **Transition to cursor-execute** — invoke `cursor-tools:cursor-execute` skill
+1. **Explore project context via Cursor** — dispatch Cursor agent to scan codebase
+2. **Read exploration results** — synthesize what Cursor found
+3. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
+4. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
+5. **Propose 2-3 approaches** — with trade-offs and your recommendation
+6. **Present design** — in sections scaled to their complexity, get user approval after each section
+7. **Write design doc** — save to `docs/specs/YYYY-MM-DD-<topic>-design.md` and commit
+8. **Spec review** — ask user: Claude, Cursor high, or Cursor deep. Run review, fix issues inline.
+9. **User reviews written spec** — ask user to review the spec file before proceeding
+10. **Write plan + transition to cursor-execute** — write implementation plan, then invoke `cursor-tools:cursor-execute`
 
-## The Process
+## Process Flow
 
-### Understanding the Idea
+```dot
+digraph brainstorming {
+    "Explore context via Cursor\n(agent --mode ask)" [shape=box];
+    "Visual questions ahead?" [shape=diamond];
+    "Offer Visual Companion\n(own message, no other content)" [shape=box];
+    "Ask clarifying questions" [shape=box];
+    "Propose 2-3 approaches" [shape=box];
+    "Present design sections" [shape=box];
+    "User approves design?" [shape=diamond];
+    "Write design doc" [shape=box];
+    "Spec review\n(Claude or Cursor GPT-5.4)" [shape=box];
+    "User reviews spec?" [shape=diamond];
+    "Write plan +\ninvoke cursor-execute" [shape=doublecircle];
 
-- Check project state first (files, docs, commits)
-- If request describes multiple subsystems, decompose before detailing
-- Ask questions one at a time, prefer multiple choice
-- Focus on: purpose, constraints, success criteria
+    "Explore context via Cursor\n(agent --mode ask)" -> "Visual questions ahead?";
+    "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
+    "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
+    "Offer Visual Companion\n(own message, no other content)" -> "Ask clarifying questions";
+    "Ask clarifying questions" -> "Propose 2-3 approaches";
+    "Propose 2-3 approaches" -> "Present design sections";
+    "Present design sections" -> "User approves design?";
+    "User approves design?" -> "Present design sections" [label="no, revise"];
+    "User approves design?" -> "Write design doc" [label="yes"];
+    "Write design doc" -> "Spec review\n(Claude or Cursor GPT-5.4)";
+    "Spec review\n(Claude or Cursor GPT-5.4)" -> "User reviews spec?";
+    "User reviews spec?" -> "Write design doc" [label="changes requested"];
+    "User reviews spec?" -> "Write plan +\ninvoke cursor-execute" [label="approved"];
+}
+```
 
-### Exploring Approaches
+**The terminal state is writing the plan and invoking cursor-execute.** Do NOT invoke any other implementation skill.
 
-- Propose 2-3 approaches with trade-offs
-- Lead with your recommendation and why
-- Keep it conversational
+## Phase 1: Explore Context via Cursor
 
-### Presenting the Design
+Delegate codebase exploration to Cursor to save Claude tokens:
 
-- Scale each section to its complexity
-- Ask after each section if it looks right
+```bash
+cd /path/to/project && agent -p --force --trust \
+  --model composer-2-fast --output-format json --mode ask \
+  "Explore this project thoroughly. Read README, CLAUDE.md, docs/, recent git log (last 10 commits), and key source files. Report:
+  1. Tech stack and dependencies
+  2. Architecture and file structure
+  3. Existing patterns and conventions
+  4. Key files relevant to [TOPIC]
+  5. Any related existing implementations"
+```
+
+Read the JSON result. Use it to inform your questions and design decisions.
+
+**If Cursor is unavailable:** Fall back to exploring manually with Read/Glob/Grep tools.
+
+## Phases 2-5: The Design Dialogue (Claude Native)
+
+**Understanding the idea:**
+
+- Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
+- If the project is too large for a single spec, help the user decompose into sub-projects: what are the independent pieces, how do they relate, what order should they be built? Then brainstorm the first sub-project through the normal design flow. Each sub-project gets its own spec → plan → implementation cycle.
+- For appropriately-scoped projects, ask questions one at a time to refine the idea
+- Prefer multiple choice questions when possible, but open-ended is fine too
+- Only one question per message - if a topic needs more exploration, break it into multiple questions
+- Focus on understanding: purpose, constraints, success criteria
+
+**Exploring approaches:**
+
+- Propose 2-3 different approaches with trade-offs
+- Present options conversationally with your recommendation and reasoning
+- Lead with your recommended option and explain why
+
+**Presenting the design:**
+
+- Once you believe you understand what you're building, present the design
+- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
+- Ask after each section whether it looks right so far
 - Cover: architecture, components, data flow, error handling, testing
-- Design for isolation: clear purpose, well-defined interfaces, testable independently
+- Be ready to go back and clarify if something doesn't make sense
 
-### Writing the Plan
+**Design for isolation and clarity:**
 
-After spec approval, break the design into implementation tasks:
+- Break the system into smaller units that each have one clear purpose, communicate through well-defined interfaces, and can be understood and tested independently
+- For each unit, you should be able to answer: what does it do, how do you use it, and what does it depend on?
+- Can someone understand what a unit does without reading its internals? Can you change the internals without breaking consumers? If not, the boundaries need work.
+- Smaller, well-bounded units are also easier for you to work with - you reason better about code you can hold in context at once, and your edits are more reliable when files are focused. When a file grows large, that's often a signal that it's doing too much.
+
+**Working in existing codebases:**
+
+- Explore the current structure before proposing changes. Follow existing patterns.
+- Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the design - the way a good developer improves code they're working in.
+- Don't propose unrelated refactoring. Stay focused on what serves the current goal.
+
+## After the Design
+
+**Documentation:**
+
+- Write the validated design (spec) to `docs/specs/YYYY-MM-DD-<topic>-design.md`
+  - (User preferences for spec location override this default)
+- Commit the design document to git
+
+## Phase 6: Spec Review
+
+Ask the user which reviewer to use via AskUserQuestion:
+
+- **Claude** (native subagent) — fast, uses current conversation context
+- **Cursor high** (`gpt-5.4-high`, ~3 min) — solid structured review
+- **Cursor deep** (`gpt-5.4-xhigh`, ~10 min) — thorough audit, 1M context
+
+**If Cursor chosen:**
+
+```bash
+cd /path/to/project && agent -p --force --trust \
+  --model gpt-5.4-high --output-format json --mode ask \
+  "Review this spec document for implementation readiness.
+
+SPEC FILE: [PATH]
+
+Check:
+1. Completeness — TODOs, placeholders, TBD, incomplete sections
+2. Consistency — internal contradictions, conflicting requirements
+3. Clarity — requirements ambiguous enough to cause wrong implementation
+4. Scope — focused enough for single plan, or needs decomposition
+5. YAGNI — unrequested features, over-engineering
+
+Only flag issues that would cause real problems during implementation.
+
+Report: Status (Approved / Issues Found), Issues list, Recommendations."
+```
+
+**If Claude chosen:** Dispatch as native subagent with same review checklist (see `spec-reviewer-prompt.md`).
+
+After review, fix any issues inline. Then:
+
+**User Review Gate:**
+After the review passes, ask the user to review the written spec before proceeding:
+
+> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we write the implementation plan."
+
+Wait for the user's response. If they request changes, make them and re-run the review. Only proceed once the user approves.
+
+## Phase 8: Write Implementation Plan
+
+After spec approval, write the implementation plan inline (Claude native — needs full dialogue context).
+
+Break the design into independent tasks:
 
 ```markdown
 ## Implementation Plan
@@ -70,10 +206,10 @@ After spec approval, break the design into implementation tasks:
 ```
 
 **Mark each task's complexity:**
-- **simple/standard** → Cursor (`composer-2-fast`)
-- **complex** → Claude handles directly
+- **simple/standard** → Cursor (`composer-2-fast`) during execution
+- **complex** → Claude handles directly during execution
 
-### Transition to Execution
+## Phase 9: Transition to Execution
 
 <HARD-GATE>
 After the plan is written and approved, you MUST switch to `cursor-tools:cursor-execute`. Do NOT implement tasks yourself. Do NOT start coding inline. Invoke the skill.
@@ -90,13 +226,33 @@ Then immediately invoke `cursor-tools:cursor-execute` via the Skill tool.
 - "Just do a quick one" before switching
 - Skip the transition because "it's simple enough"
 
-The entire point of this workflow is that brainstorming and execution are separate modes with different engines. Brainstorming = Claude native. Execution = Cursor hybrid.
+Brainstorming and execution are separate modes with different engines. Brainstorming = Claude native dialogue. Execution = Cursor hybrid routing.
 
 ## Key Principles
 
-- **One question at a time**
-- **YAGNI ruthlessly** — remove unnecessary features
-- **Explore alternatives** — always 2-3 approaches
-- **No code before approval** — design first, always
-- **Complexity routing** — simple to Cursor, complex stays with Claude
-- **Always switch to cursor-execute** — never implement inline after brainstorming
+- **One question at a time** - Don't overwhelm with multiple questions
+- **Multiple choice preferred** - Easier to answer than open-ended when possible
+- **YAGNI ruthlessly** - Remove unnecessary features from all designs
+- **Explore alternatives** - Always propose 2-3 approaches before settling
+- **Incremental validation** - Present design, get approval before moving on
+- **Be flexible** - Go back and clarify when something doesn't make sense
+- **Always switch to cursor-execute** - Never implement inline after brainstorming
+
+## Visual Companion
+
+A browser-based companion for showing mockups, diagrams, and visual options during brainstorming. Available as a tool — not a mode. Accepting the companion means it's available for questions that benefit from visual treatment; it does NOT mean every question goes through the browser.
+
+**Offering the companion:** When you anticipate that upcoming questions will involve visual content (mockups, layouts, diagrams), offer it once for consent:
+> "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. This feature is still new and can be token-intensive. Want to try it? (Requires opening a local URL)"
+
+**This offer MUST be its own message.** Do not combine it with clarifying questions, context summaries, or any other content. The message should contain ONLY the offer above and nothing else. Wait for the user's response before continuing. If they decline, proceed with text-only brainstorming.
+
+**Per-question decision:** Even after the user accepts, decide FOR EACH QUESTION whether to use the browser or the terminal. The test: **would the user understand this better by seeing it than reading it?**
+
+- **Use the browser** for content that IS visual — mockups, wireframes, layout comparisons, architecture diagrams, side-by-side visual designs
+- **Use the terminal** for content that is text — requirements questions, conceptual choices, tradeoff lists, A/B/C/D text options, scope decisions
+
+A question about a UI topic is not automatically a visual question. "What does personality mean in this context?" is a conceptual question — use the terminal. "Which wizard layout works better?" is a visual question — use the browser.
+
+If they agree to the companion, read the detailed guide before proceeding:
+`skills/cursor-brainstorm/visual-companion.md`
