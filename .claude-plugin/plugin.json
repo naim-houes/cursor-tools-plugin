@@ -1,0 +1,8 @@
+{
+  "name": "cursor-tools",
+  "description": "Delegate implementation tasks to Cursor's agent CLI. Claude plans and reviews, Cursor implements cheaply via composer-2-fast.",
+  "version": "1.0.0",
+  "author": {
+    "name": "naim-houes"
+  }
+}
