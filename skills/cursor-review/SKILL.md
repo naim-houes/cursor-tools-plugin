@@ -22,9 +22,13 @@ Run comprehensive code reviews via Cursor's `agent` CLI using GPT-5.4 (1M contex
 | **high** | `gpt-5.4-high` | ~2-3 min | Default. Quick PR reviews, routine changes, large diffs |
 | **deep** | `gpt-5.4-xhigh` | ~8-10 min | Security-critical, complex architecture, pre-release audits |
 
-**Default is high.** Use deep when the user asks for thorough/deep review, when reviewing auth/security code, or before major releases.
+**Always ask the user which mode before starting the review.** Use AskUserQuestion tool:
 
-Ask the user which mode if unclear: "High mode (~3 min) or deep mode (~10 min)?"
+> "Which review mode?"
+> - **High** (~3 min) — routine changes, quick feedback
+> - **Deep** (~10 min) — thorough audit, security-critical code
+
+If the user already specified (e.g. "deep review", "quick review"), skip the question and use the matching mode.
 
 ## Quick Reference
 

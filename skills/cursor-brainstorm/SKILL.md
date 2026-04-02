@@ -73,13 +73,24 @@ After spec approval, break the design into implementation tasks:
 - **simple/standard** → Cursor (`composer-2-fast`)
 - **complex** → Claude handles directly
 
-### Transition
+### Transition to Execution
 
-After plan is written and approved:
+<HARD-GATE>
+After the plan is written and approved, you MUST switch to `cursor-tools:cursor-execute`. Do NOT implement tasks yourself. Do NOT start coding inline. Invoke the skill.
+</HARD-GATE>
 
-> "Design and plan approved. Transitioning to cursor-execute for implementation."
+When transitioning, say:
 
-Invoke `cursor-tools:cursor-execute`.
+> "Design and plan approved. Switching to **cursor-execute** mode — simple tasks go to Cursor (`composer-2-fast`), complex ones I handle directly, reviews via GPT-5.4."
+
+Then immediately invoke `cursor-tools:cursor-execute` via the Skill tool.
+
+**Do NOT:**
+- Start implementing tasks without invoking cursor-execute
+- "Just do a quick one" before switching
+- Skip the transition because "it's simple enough"
+
+The entire point of this workflow is that brainstorming and execution are separate modes with different engines. Brainstorming = Claude native. Execution = Cursor hybrid.
 
 ## Key Principles
 
@@ -88,3 +99,4 @@ Invoke `cursor-tools:cursor-execute`.
 - **Explore alternatives** — always 2-3 approaches
 - **No code before approval** — design first, always
 - **Complexity routing** — simple to Cursor, complex stays with Claude
+- **Always switch to cursor-execute** — never implement inline after brainstorming
