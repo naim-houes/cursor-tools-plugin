@@ -1,0 +1,17 @@
+{
+  "name": "cursor-tools",
+  "owner": {
+    "name": "naim-houes"
+  },
+  "plugins": [
+    {
+      "name": "cursor-tools",
+      "source": {
+        "source": "github",
+        "repo": "naim-houes/cursor-tools-plugin"
+      },
+      "description": "Delegate implementation tasks to Cursor's agent CLI. Claude plans and reviews, Cursor implements via composer-2-fast.",
+      "version": "1.0.0"
+    }
+  ]
+}
