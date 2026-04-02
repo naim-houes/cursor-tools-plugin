@@ -15,31 +15,30 @@ Run comprehensive code reviews via Cursor's `agent` CLI using GPT-5.4 (1M contex
 
 **Why GPT-5.4:** Large context window (1M), strong reasoning for code analysis, available on Cursor Ultra credits.
 
+## Two Modes
+
+| Mode | Model | Speed | Use when |
+|------|-------|-------|----------|
+| **high** | `gpt-5.4-high` | ~2-3 min | Default. Quick PR reviews, routine changes, large diffs |
+| **deep** | `gpt-5.4-xhigh` | ~8-10 min | Security-critical, complex architecture, pre-release audits |
+
+**Default is high.** Use deep when the user asks for thorough/deep review, when reviewing auth/security code, or before major releases.
+
+Ask the user which mode if unclear: "High mode (~3 min) or deep mode (~10 min)?"
+
 ## Quick Reference
 
 ```bash
-# Review unstaged changes
-agent -p --force --trust --model gpt-5.4-xhigh --output-format json \
+# High mode (default)
+agent -p --force --trust --model gpt-5.4-high --output-format json \
   --mode ask "REVIEW PROMPT"
 
-# Review a specific PR
+# Deep mode
 agent -p --force --trust --model gpt-5.4-xhigh --output-format json \
-  --mode ask "REVIEW PROMPT WITH DIFF"
+  --mode ask "REVIEW PROMPT"
 ```
 
 **`--mode ask`** — read-only mode, no file edits. Perfect for reviews.
-
-## Default Model
-
-**`gpt-5.4-xhigh`** (GPT-5.4 1M Extra High) by default. User can override:
-
-| Model | When |
-|-------|------|
-| `gpt-5.4-xhigh` | Default — deepest reasoning, best for thorough review |
-| `gpt-5.4-high` | Slightly faster, still strong |
-| `gpt-5.4-medium` | Quick scan, large diffs |
-| `claude-4.6-opus-high` | If user prefers Claude for review |
-| `composer-2-fast` | Budget review, simple changes |
 
 ## Workflow
 
@@ -69,7 +68,7 @@ Run **3 parallel** Cursor agents, each reviewing from a different angle:
 
 ```bash
 # Agent 1: Bug scan
-agent -p --force --trust --model gpt-5.4-xhigh --output-format json --mode ask \
+agent -p --force --trust --model gpt-5.4-high --output-format json --mode ask \
   "Review this diff for bugs, logic errors, and security vulnerabilities.
 Focus on issues that would break in production. Ignore style nitpicks.
 Rate each finding 0-100 confidence (100 = certain bug, 0 = false positive).
@@ -81,7 +80,7 @@ Diff:
 [PASTE DIFF]"
 
 # Agent 2: CLAUDE.md compliance
-agent -p --force --trust --model gpt-5.4-xhigh --output-format json --mode ask \
+agent -p --force --trust --model gpt-5.4-high --output-format json --mode ask \
   "Check if this diff complies with the project's CLAUDE.md rules.
 Only flag violations that are EXPLICITLY mentioned in CLAUDE.md.
 Rate each finding 0-100 confidence.
@@ -93,7 +92,7 @@ Diff:
 [PASTE DIFF]"
 
 # Agent 3: Architecture and patterns
-agent -p --force --trust --model gpt-5.4-xhigh --output-format json --mode ask \
+agent -p --force --trust --model gpt-5.4-high --output-format json --mode ask \
   "Review this diff for architectural issues: wrong abstractions, missing error handling
 at system boundaries, broken patterns, coupling issues.
 Rate each finding 0-100 confidence.

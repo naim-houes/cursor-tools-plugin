@@ -11,7 +11,7 @@ Hybrid AI workflow plugin for Claude Code. Claude brainstorms and orchestrates, 
 | **cursor-brainstorm** | Claude (native) | current | Design dialogue → spec → plan |
 | **cursor-execute** | Cursor + Claude | routing table | Execute plan: Cursor for simple, Claude for complex |
 | **cursor-delegate** | Cursor agent CLI | `composer-2-fast` | Core delegation mechanism |
-| **cursor-review** | Cursor agent CLI | `gpt-5.4-xhigh` | Multi-angle code review |
+| **cursor-review** | Cursor agent CLI | `gpt-5.4-high` / `gpt-5.4-xhigh` | Multi-angle code review (high/deep modes) |
 
 ### Workflow
 
@@ -36,8 +36,8 @@ cursor-brainstorm                    cursor-execute
 | Planning | Claude (native) | current |
 | Implementation (simple) | Cursor agent CLI | `composer-2-fast` |
 | Implementation (complex) | Claude (native) | current |
-| Spec review | Cursor agent CLI | `gpt-5.4-xhigh` |
-| Code quality review | Cursor agent CLI | `gpt-5.4-xhigh` |
+| Spec review | Cursor agent CLI | `gpt-5.4-high` / `xhigh` |
+| Code quality review | Cursor agent CLI | `gpt-5.4-high` / `xhigh` |
 | Fix from review | Cursor agent CLI | `composer-2-fast` |
 | Debugging | Claude (native) | current |
 
@@ -57,6 +57,6 @@ claude plugin install cursor-tools
 ## Key Rules
 
 - **Implementation:** Always `composer-2-fast`. Too complex? Claude handles it directly.
-- **Review:** Default `gpt-5.4-xhigh` via `--mode ask` (read-only).
+- **Review:** Two modes — **high** (`gpt-5.4-high`, ~3 min) and **deep** (`gpt-5.4-xhigh`, ~10 min). Default is high.
 - **No code before design approval.** Brainstorm first, always.
 - **Always review.** Never trust Cursor output blindly.

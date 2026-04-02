@@ -16,8 +16,8 @@ Execute an implementation plan by routing each task to the right engine:
 |------|--------|-------|
 | **Implementation** (simple/standard) | Cursor agent CLI | `composer-2-fast` |
 | **Implementation** (complex) | Claude (native) | current model |
-| **Spec review** | Cursor agent CLI | `gpt-5.4-xhigh` |
-| **Code quality review** | Cursor agent CLI | `gpt-5.4-xhigh` |
+| **Spec review** | Cursor agent CLI | `gpt-5.4-high` (high) / `gpt-5.4-xhigh` (deep) |
+| **Code quality review** | Cursor agent CLI | `gpt-5.4-high` (high) / `gpt-5.4-xhigh` (deep) |
 | **Fix from review** | Cursor agent CLI | `composer-2-fast` |
 | **Orchestration** | Claude (native) | current model |
 
@@ -74,7 +74,7 @@ After implementation (either path), run spec review via Cursor GPT-5.4:
 
 ```bash
 cd /path/to/project && agent -p --force --trust \
-  --model gpt-5.4-xhigh --output-format json --mode ask \
+  --model gpt-5.4-high --output-format json --mode ask \
   "Review this implementation against the spec.
 
 SPEC:
@@ -97,7 +97,7 @@ If spec review passes, run code quality review:
 
 ```bash
 cd /path/to/project && agent -p --force --trust \
-  --model gpt-5.4-xhigh --output-format json --mode ask \
+  --model gpt-5.4-high --output-format json --mode ask \
   "Review these files for code quality.
 
 FILES:
@@ -144,7 +144,7 @@ Run one final review across the entire implementation:
 
 ```bash
 cd /path/to/project && agent -p --force --trust \
-  --model gpt-5.4-xhigh --output-format json --mode ask \
+  --model gpt-5.4-high --output-format json --mode ask \
   "Final review of the full implementation.
 
 ALL FILES CHANGED:
