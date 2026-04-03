@@ -25,12 +25,12 @@ Every project goes through this process. A todo list, a single-function utility,
 
 | Phase | Engine | Model |
 |-------|--------|-------|
-| 1. Explore context | **cursor-context** skill | `composer-2-fast` |
-| 2-5. Questions, design, spec | Claude native | current |
-| 6. Spec review | **Claude OR Cursor** `--mode ask` | user's choice |
-| 7. User reviews | (user) | |
-| 8. Write plan | Claude native | current |
-| 9. Execute | **cursor-execute** | routing table |
+| 1-2. Explore context | **cursor-context** skill | `composer-2-fast` |
+| 3-6. Questions, design, present | Claude native | current |
+| 7. Write design doc | Claude native | current |
+| 8. Spec review | **Claude OR Cursor** `--mode ask` | user's choice |
+| 9. User reviews | (user) | |
+| 10. Write plan + execute | **cursor-execute** | routing table |
 
 ## Checklist
 
@@ -51,37 +51,37 @@ You MUST create a task for each of these items and complete them in order:
 
 ```dot
 digraph brainstorming {
-    "Explore context via Cursor\n(agent --mode ask)" [shape=box];
+    "1-2. Explore context\n(cursor-context)" [shape=box];
     "Visual questions ahead?" [shape=diamond];
-    "Offer Visual Companion\n(own message, no other content)" [shape=box];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
+    "3. Offer Visual Companion" [shape=box];
+    "4. Ask clarifying questions\n(incl. testing strategy)" [shape=box];
+    "5. Propose 2-3 approaches" [shape=box];
+    "6. Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
-    "Spec review\n(Claude or Cursor GPT-5.4)" [shape=box];
-    "User reviews spec?" [shape=diamond];
-    "Write plan +\ninvoke cursor-execute" [shape=doublecircle];
+    "7. Write design doc" [shape=box];
+    "8. Spec review\n(Claude or Cursor GPT-5.4)" [shape=box];
+    "9. User reviews spec?" [shape=diamond];
+    "10. Write plan +\ninvoke cursor-execute" [shape=doublecircle];
 
-    "Explore context via Cursor\n(agent --mode ask)" -> "Visual questions ahead?";
-    "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
-    "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
-    "Offer Visual Companion\n(own message, no other content)" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec review\n(Claude or Cursor GPT-5.4)";
-    "Spec review\n(Claude or Cursor GPT-5.4)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Write plan +\ninvoke cursor-execute" [label="approved"];
+    "1-2. Explore context\n(cursor-context)" -> "Visual questions ahead?";
+    "Visual questions ahead?" -> "3. Offer Visual Companion" [label="yes"];
+    "Visual questions ahead?" -> "4. Ask clarifying questions\n(incl. testing strategy)" [label="no"];
+    "3. Offer Visual Companion" -> "4. Ask clarifying questions\n(incl. testing strategy)";
+    "4. Ask clarifying questions\n(incl. testing strategy)" -> "5. Propose 2-3 approaches";
+    "5. Propose 2-3 approaches" -> "6. Present design sections";
+    "6. Present design sections" -> "User approves design?";
+    "User approves design?" -> "6. Present design sections" [label="no, revise"];
+    "User approves design?" -> "7. Write design doc" [label="yes"];
+    "7. Write design doc" -> "8. Spec review\n(Claude or Cursor GPT-5.4)";
+    "8. Spec review\n(Claude or Cursor GPT-5.4)" -> "9. User reviews spec?";
+    "9. User reviews spec?" -> "7. Write design doc" [label="changes requested"];
+    "9. User reviews spec?" -> "10. Write plan +\ninvoke cursor-execute" [label="approved"];
 }
 ```
 
 **The terminal state is writing the plan and invoking cursor-execute.** Do NOT invoke any other implementation skill.
 
-## Phase 1: Explore Context via cursor-context
+## Phases 1-2: Explore Context via cursor-context
 
 Use the `cursor-context` skill to gather codebase context. Invoke it via the Skill tool:
 
@@ -98,7 +98,7 @@ Read the results. Use them to inform your questions and design decisions.
 
 **If Cursor is unavailable:** Fall back to exploring manually with Read/Glob/Grep tools.
 
-## Phases 2-5: The Design Dialogue (Claude Native)
+## Phases 3-6: The Design Dialogue (Claude Native)
 
 **Understanding the idea:**
 
@@ -148,15 +148,13 @@ Use the answer to determine TDD requirements in the plan. Not every task needs T
 - Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the design - the way a good developer improves code they're working in.
 - Don't propose unrelated refactoring. Stay focused on what serves the current goal.
 
-## After the Design
-
-**Documentation:**
+## Phase 7: Write Design Doc
 
 - Write the validated design (spec) to `docs/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
 - Commit the design document to git
 
-## Phase 6: Spec Review
+## Phase 8: Spec Review
 
 Ask the user which reviewer to use via AskUserQuestion:
 
@@ -189,14 +187,15 @@ Report: Status (Approved / Issues Found), Issues list, Recommendations."
 
 After review, fix any issues inline. Then:
 
-**User Review Gate:**
+## Phase 9: User Reviews Written Spec
+
 After the review passes, ask the user to review the written spec before proceeding:
 
 > "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we write the implementation plan."
 
 Wait for the user's response. If they request changes, make them and re-run the review. Only proceed once the user approves.
 
-## Phase 8: Write Implementation Plan
+## Phase 10: Write Implementation Plan + Transition to Execution
 
 After spec approval, write the implementation plan inline (Claude native — needs full dialogue context).
 
@@ -242,8 +241,6 @@ Break the design into independent tasks:
 **Integration and E2E tests are separate tasks** added at the end of the plan when the testing strategy requires them. This keeps implementation tasks focused and lets test tasks reference the completed code.
 
 Test writing is delegated to Cursor (`composer-2-fast`).
-
-## Phase 9: Transition to Execution
 
 <HARD-GATE>
 After the plan is written and approved, you MUST switch to `cursor-tools:cursor-execute`. Do NOT implement tasks yourself. Do NOT start coding inline. Invoke the skill.
