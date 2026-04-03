@@ -124,10 +124,18 @@ cd /path/to/project && agent -p --force --trust \
 
 Set Bash timeout to 120000-300000ms depending on task complexity.
 
-### 4. Parse Result
+### 4. Notify + Parse Result
+
+After the agent finishes, notify the user:
+
+```bash
+# Find notify.sh from the plugin
+NOTIFY=$(find ~/.claude/plugins -path "*/cursor-tools/*/scripts/notify.sh" 2>/dev/null | head -1)
+[ -n "$NOTIFY" ] && bash "$NOTIFY" "task name" "complete"
+```
 
 From the JSON output, check:
-- `is_error` — did it fail?
+- `is_error` — did it fail? (if so, notify with "failed")
 - `result` — summary of what was done
 - `duration_ms` — how long it took
 - `session_id` — needed if you want to `--continue`

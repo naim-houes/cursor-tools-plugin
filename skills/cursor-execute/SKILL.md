@@ -31,8 +31,11 @@ Read plan → Extract tasks → Create TodoWrite
   For each task:
   +-- Assess complexity (simple/standard → Cursor, complex → Claude)
   +-- Implement (Cursor agent or Claude directly)
+  +-- 🔔 Notify: "task name" "implemented"
   +-- Spec review (Cursor GPT-5.4, --mode ask)
+  +-- 🔔 Notify: "task name" "spec reviewed"
   +-- Code quality review (Cursor GPT-5.4, --mode ask)
+  +-- 🔔 Notify: "task name" "review complete"
   +-- Fix issues if any
   +-- Mark complete
   |
@@ -190,6 +193,31 @@ Is the task...
 
 **When in doubt:** start with Cursor. If it fails or produces poor results, handle it yourself as Claude.
 
+## Notifications
+
+After every long-running step (implementation, review), notify the user so they can multitask:
+
+```bash
+NOTIFY=$(find ~/.claude/plugins -path "*/cursor-tools/*/scripts/notify.sh" 2>/dev/null | head -1)
+
+# After implementation completes
+[ -n "$NOTIFY" ] && bash "$NOTIFY" "Task 1: validators" "implemented"
+
+# After spec review
+[ -n "$NOTIFY" ] && bash "$NOTIFY" "Task 1: validators" "spec reviewed"
+
+# After quality review
+[ -n "$NOTIFY" ] && bash "$NOTIFY" "Task 1: validators" "review complete"
+
+# On failure
+[ -n "$NOTIFY" ] && bash "$NOTIFY" "Task 1: validators" "failed"
+
+# On all tasks done
+[ -n "$NOTIFY" ] && bash "$NOTIFY" "All tasks" "plan complete"
+```
+
+On macOS: plays a chime + speaks the task name. On Linux: desktop notification or terminal bell. Set `CURSOR_NOTIFY_WEBHOOK` for headless/EC2 servers.
+
 ## Red Flags
 
 - **Never** skip reviews (spec OR quality)
@@ -199,3 +227,4 @@ Is the task...
 - **Never** upgrade Cursor model for complex tasks — do it yourself as Claude
 - **Always** read files after Cursor finishes — don't trust blindly
 - **Always** re-review after fixes
+- **Always** notify after long-running steps
