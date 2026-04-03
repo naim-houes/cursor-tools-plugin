@@ -30,16 +30,27 @@ while true; do
   MSG=$(nc -l "$PORT" 2>/dev/null)
 
   if [ -n "$MSG" ]; then
-    # Parse: "status|task name"
-    STATUS=$(echo "$MSG" | cut -d'|' -f1)
-    TASK=$(echo "$MSG" | cut -d'|' -f2-)
+    # Parse: "type|content"
+    TYPE=$(echo "$MSG" | cut -d'|' -f1)
+    CONTENT=$(echo "$MSG" | cut -d'|' -f2-)
+
+    # ── Narrate mode: just speak the text, no chime ──
+    if [ "$TYPE" = "narrate" ]; then
+      echo "[$(date +%H:%M:%S)] narrating..."
+      say -v "$VOICE" "$CONTENT"
+      continue
+    fi
+
+    # ── Notify mode: chime + short speech ──
+    STATUS="$TYPE"
+    TASK="$CONTENT"
     [ -z "$TASK" ] && TASK="$STATUS" && STATUS="complete"
 
     echo "[$(date +%H:%M:%S)] $STATUS: $TASK"
 
     # Chime
     case "$STATUS" in
-      fail*|error*|block*)
+      fail*|error*|block*|issue*)
         afplay /System/Library/Sounds/Basso.aiff &
         ;;
       *)
