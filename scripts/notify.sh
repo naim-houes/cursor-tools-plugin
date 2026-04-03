@@ -1,98 +1,45 @@
 #!/bin/bash
-# cursor-tools notification — plays a chime + speaks the task status
+# cursor-tools notification
 #
 # Usage:
 #   ./notify.sh "task name" [status]
 #
-# Examples:
-#   ./notify.sh "validator module"                    # → chime + "Complete. Validator module."
-#   ./notify.sh "FastAPI endpoints" "done"            # → chime + "Done. FastAPI endpoints."
-#   ./notify.sh "spec review" "issues found"          # → chime + "Issues found. Spec review."
-#   ./notify.sh "auth middleware" "failed"             # → error chime + "Failed. Auth middleware."
+# On Mac:  plays chime + speaks task name
+# On EC2:  sends to localhost:9876 via SSH reverse tunnel → Mac plays it
+#
+# Setup (one time):
+#   Mac:  ./notify-listener.sh        # starts listener on port 9876
+#   SSH:  ssh -R 9876:localhost:9876 ec2-user@host
+#   EC2:  ./notify.sh "task name"     # sends to Mac via tunnel
 #
 # Environment:
-#   CURSOR_NOTIFY_VOICE    - macOS voice (default: Samantha)
-#   CURSOR_NOTIFY_SOUND    - chime sound (default: Hero for success, Basso for failure)
-#   CURSOR_NOTIFY_WEBHOOK  - webhook URL for headless servers (POST JSON)
-#   CURSOR_NOTIFY_OFF      - set to 1 to disable all notifications
-#
-# Works on:
-#   - macOS: say + afplay (chime + voice)
-#   - Linux desktop: notify-send + espeak/spd-say
-#   - Linux headless/EC2: webhook or terminal bell
-#   - Any: terminal bell fallback
-
-set -euo pipefail
+#   CURSOR_NOTIFY_PORT   - tunnel port (default: 9876)
+#   CURSOR_NOTIFY_VOICE  - macOS voice (default: Samantha)
+#   CURSOR_NOTIFY_OFF    - set to 1 to disable
 
 [ "${CURSOR_NOTIFY_OFF:-}" = "1" ] && exit 0
 
 TASK="${1:-task}"
 STATUS="${2:-complete}"
+PORT="${CURSOR_NOTIFY_PORT:-9876}"
 VOICE="${CURSOR_NOTIFY_VOICE:-Samantha}"
-MESSAGE="[cursor-tools] ${STATUS}: ${TASK}"
 
-# Pick sound based on status
-IS_ERROR=false
-case "$STATUS" in
-  fail*|error*|block*)
-    SOUND="${CURSOR_NOTIFY_SOUND:-/System/Library/Sounds/Basso.aiff}"
-    IS_ERROR=true
-    ;;
-  *)
-    SOUND="${CURSOR_NOTIFY_SOUND:-/System/Library/Sounds/Hero.aiff}"
-    ;;
-esac
-
-notified=false
-
-# ── macOS: chime + voice ──────────────────────────────
+# ── Mac: local notification ───────────────────────────
 if command -v afplay &>/dev/null && command -v say &>/dev/null; then
-  afplay "$SOUND" &
+  case "$STATUS" in
+    fail*|error*|block*)
+      afplay /System/Library/Sounds/Basso.aiff & ;;
+    *)
+      afplay /System/Library/Sounds/Hero.aiff & ;;
+  esac
   say -v "$VOICE" "${STATUS}. ${TASK}."
-  notified=true
+  osascript -e "display notification \"${STATUS}: ${TASK}\" with title \"cursor-tools\"" 2>/dev/null
+  exit 0
 fi
 
-# ── Linux desktop: notify-send ────────────────────────
-if [ "$notified" = false ] && command -v notify-send &>/dev/null; then
-  if [ "$IS_ERROR" = true ]; then
-    notify-send --urgency=critical "cursor-tools" "$MESSAGE"
-  else
-    notify-send "cursor-tools" "$MESSAGE"
-  fi
-  notified=true
-fi
+# ── EC2/Linux: send via tunnel to Mac ─────────────────
+echo "${STATUS}|${TASK}" | nc -w 1 localhost "$PORT" 2>/dev/null && exit 0
 
-# ── Linux voice: espeak or spd-say ────────────────────
-if [ "$notified" = false ]; then
-  if command -v espeak &>/dev/null; then
-    if command -v paplay &>/dev/null; then
-      paplay /usr/share/sounds/freedesktop/stereo/complete.oga 2>/dev/null &
-    fi
-    espeak "${STATUS}. ${TASK}." 2>/dev/null
-    notified=true
-  elif command -v spd-say &>/dev/null; then
-    spd-say "${STATUS}. ${TASK}." 2>/dev/null
-    notified=true
-  fi
-fi
-
-# ── Webhook (headless/EC2) ────────────────────────────
-if [ -n "${CURSOR_NOTIFY_WEBHOOK:-}" ]; then
-  curl -s -X POST "$CURSOR_NOTIFY_WEBHOOK" \
-    -H "Content-Type: application/json" \
-    -d "{\"text\":\"${MESSAGE}\",\"task\":\"${TASK}\",\"status\":\"${STATUS}\"}" \
-    >/dev/null 2>&1 &
-  notified=true
-fi
-
-# ── macOS notification center (always, if available) ──
-if command -v osascript &>/dev/null; then
-  osascript -e "display notification \"${STATUS}: ${TASK}\" with title \"cursor-tools\"" 2>/dev/null &
-fi
-
-# ── Fallback: terminal bell + print ───────────────────
-if [ "$notified" = false ]; then
-  printf '\a'
-fi
-
-echo "$MESSAGE"
+# ── Fallback: terminal bell ───────────────────────────
+printf '\a'
+echo "[cursor-tools] ${STATUS}: ${TASK}"
