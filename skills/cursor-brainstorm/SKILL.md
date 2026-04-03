@@ -25,7 +25,7 @@ Every project goes through this process. A todo list, a single-function utility,
 
 | Phase | Engine | Model |
 |-------|--------|-------|
-| 1. Explore context | **Cursor** `--mode ask` | `composer-2-fast` |
+| 1. Explore context | **cursor-context** skill | `composer-2-fast` |
 | 2-5. Questions, design, spec | Claude native | current |
 | 6. Spec review | **Claude OR Cursor** `--mode ask` | user's choice |
 | 7. User reviews | (user) | |
@@ -81,22 +81,20 @@ digraph brainstorming {
 
 **The terminal state is writing the plan and invoking cursor-execute.** Do NOT invoke any other implementation skill.
 
-## Phase 1: Explore Context via Cursor
+## Phase 1: Explore Context via cursor-context
 
-Delegate codebase exploration to Cursor to save Claude tokens:
+Use the `cursor-context` skill to gather codebase context. Invoke it via the Skill tool:
 
-```bash
-cd /path/to/project && agent -p --force --trust \
-  --model composer-2-fast --output-format json --mode ask \
-  "Explore this project thoroughly. Read README, CLAUDE.md, docs/, recent git log (last 10 commits), and key source files. Report:
-  1. Tech stack and dependencies
-  2. Architecture and file structure
-  3. Existing patterns and conventions
-  4. Key files relevant to [TOPIC]
-  5. Any related existing implementations"
+```
+Skill: cursor-context
 ```
 
-Read the JSON result. Use it to inform your questions and design decisions.
+Choose the appropriate exploration strategy from cursor-context based on what you need:
+- **Broad Project Survey** — for new/unfamiliar projects
+- **Focused Module Deep-Dive** — when the topic targets a specific area
+- **Pattern Discovery** — when you need to understand how something is done across the codebase
+
+Read the results. Use them to inform your questions and design decisions.
 
 **If Cursor is unavailable:** Fall back to exploring manually with Read/Glob/Grep tools.
 
@@ -198,8 +196,11 @@ Break the design into independent tasks:
 ### Task 1: [Name]
 - Files: src/foo.ts, src/bar.ts
 - What: [specific description]
-- Tests: [what to test]
 - Complexity: simple | standard | complex
+- TDD:
+  - Unit tests: tests/foo.test.ts, tests/bar.test.ts (mirror project structure)
+  - Integration tests: tests/integration/foo-bar.test.ts (if task connects modules)
+  - E2E tests: tests/e2e/flow-name.test.ts (if task modifies user-facing flow)
 
 ### Task 2: [Name]
 ...
@@ -208,6 +209,13 @@ Break the design into independent tasks:
 **Mark each task's complexity:**
 - **simple/standard** → Cursor (`composer-2-fast`) during execution
 - **complex** → Claude handles directly during execution
+
+**TDD is mandatory.** Every task that produces testable code must specify:
+- **Unit tests** — always required for new functions/classes, following project test directory structure
+- **Integration tests** — required when the task connects modules, APIs, or services
+- **E2E tests** — required when the task adds/modifies a user-facing workflow
+
+Tests are written BEFORE implementation (TDD). Cursor handles test writing via `composer-2-fast`.
 
 ## Phase 9: Transition to Execution
 

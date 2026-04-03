@@ -30,17 +30,22 @@ Read plan → Extract tasks → Create TodoWrite
   |
   For each task:
   +-- Assess complexity (simple/standard → Cursor, complex → Claude)
+  +-- TDD: Write failing tests first (Cursor or Claude)
+  +-- 🔔 Notify: "task name" "tests written"
+  +-- Verify tests fail (expected — no implementation yet)
   +-- Implement (Cursor agent or Claude directly)
+  +-- Run tests — verify they pass
   +-- 🔔 Notify: "task name" "implemented"
   +-- Spec review (Cursor GPT-5.4, --mode ask)
   +-- 🔔 Notify: "task name" "spec reviewed"
-  +-- Code quality review (Cursor GPT-5.4, --mode ask)
+  +-- Code quality + test coverage review (Cursor GPT-5.4, --mode ask)
   +-- 🔔 Notify: "task name" "review complete"
   +-- Fix issues if any
   +-- Mark complete
   |
   After all tasks:
-  +-- Final review
+  +-- Run full test suite
+  +-- Final review (includes test coverage check)
   +-- Present to user
 ```
 
@@ -54,24 +59,75 @@ For each task, assess complexity:
 - **Simple/Standard:** 1-3 files, clear spec, no deep reasoning → Cursor
 - **Complex:** multi-file architecture, security, deep reasoning → Claude
 
-### 2. Implement — Cursor Path
+### 2. TDD: Write Failing Tests First
+
+Before ANY implementation, write tests. This applies to every task that produces testable code.
+
+**Test types required (when applicable):**
+
+| Type | Scope | When Required |
+|------|-------|---------------|
+| **Unit tests** | Single function/class in isolation | Always for new functions/classes |
+| **Integration tests** | Multiple components working together | When task connects modules, APIs, or services |
+| **End-to-end tests** | Full user flow through the system | When task adds/modifies a user-facing workflow |
+
+**Unit test structure:** Follow the existing project test directory structure. Mirror the source tree — if implementing `src/services/auth.py`, tests go in `tests/services/test_auth.py` (or wherever the project convention places them). Discover the convention first:
+
+```bash
+cd /path/to/project && agent -p --force --trust \
+  --model composer-2-fast --output-format json --mode ask \
+  "Find the test directory structure and conventions in this project. Report:
+  1. Test framework (pytest, jest, vitest, etc.)
+  2. Test directory layout (mirror src? flat? co-located?)
+  3. Naming conventions (test_*.py? *.test.ts? *.spec.ts?)
+  4. Test runner command
+  5. Example of a well-written test in this project"
+```
+
+**Write tests via Cursor:**
+
+```bash
+cd /path/to/project && agent -p --force --trust \
+  --model composer-2-fast --output-format json \
+  "TDD — write FAILING tests for this task. Do NOT implement the feature yet.
+
+TASK SPEC:
+[PASTE TASK SPEC FROM PLAN]
+
+Write tests following the project's existing test structure and conventions.
+Include:
+- Unit tests for each new function/class
+- Integration tests if this task connects components [SPECIFY WHICH]
+- E2E tests if this task modifies a user-facing flow [SPECIFY WHICH]
+
+Tests MUST fail right now (the implementation doesn't exist yet).
+Run the tests to confirm they fail with the expected errors."
+```
+
+**Verify tests fail:**
+
+Run the test command. Confirm failures are for the RIGHT reason (missing implementation, not syntax errors or broken imports).
+
+### 3. Implement — Cursor Path
 
 ```bash
 cd /path/to/project && agent -p --force --trust \
   --model composer-2-fast --output-format json \
   "TASK PROMPT — include: what to build, file paths, patterns to follow,
-  constraints, and 'run tests when done'"
+  constraints, and 'run tests when done to verify they pass'"
 ```
 
 Run via Bash tool. Timeout 120000-300000ms.
 
 Parse JSON result: check `is_error`, read `result` summary.
 
-### 2b. Implement — Claude Path
+**After implementation, run all tests for this task.** If tests fail, fix before proceeding.
 
-For complex tasks, implement directly using Read/Edit/Write tools. No delegation. Claude handles the full reasoning.
+### 3b. Implement — Claude Path
 
-### 3. Spec Review
+For complex tasks, implement directly using Read/Edit/Write tools. No delegation. Claude handles the full reasoning. Run tests after implementation to verify they pass.
+
+### 4. Spec Review
 
 After implementation (either path), run spec review via Cursor GPT-5.4:
 
@@ -94,7 +150,7 @@ Check:
 Report: PASS (all requirements met) or FAIL (list specific gaps)."
 ```
 
-### 4. Code Quality Review
+### 5. Code Quality + Test Coverage Review
 
 If spec review passes, run code quality review:
 
@@ -115,12 +171,18 @@ Check for:
 - CLAUDE.md compliance
 - Missing error handling at system boundaries
 - Wrong abstractions
+- Test coverage gaps:
+  * Are there unit tests for every new function/class?
+  * Are there integration tests for component interactions?
+  * Are there E2E tests for user-facing flows (if applicable)?
+  * Do tests follow the project's test directory structure?
+  * Are tests meaningful (not just asserting true)?
 
 Rate each finding 0-100 confidence. Only report findings >= 80.
 Report: PASS or FAIL with specific issues."
 ```
 
-### 5. Fix Issues
+### 6. Fix Issues
 
 If either review fails:
 
@@ -137,13 +199,20 @@ cd /path/to/project && agent -p --force --trust \
 
 **After 2 failed fix rounds:** handle it yourself as Claude.
 
-### 6. Mark Complete
+### 7. Mark Complete
 
 Update TodoWrite. Move to next task.
 
-### 7. Final Review (After All Tasks)
+### 8. Final Review (After All Tasks)
 
-Run one final review across the entire implementation:
+Run the full test suite first, then the final review:
+
+```bash
+# Run full test suite
+cd /path/to/project && [TEST RUNNER COMMAND]
+```
+
+If tests fail, fix before proceeding to review.
 
 ```bash
 cd /path/to/project && agent -p --force --trust \
@@ -156,7 +225,11 @@ ALL FILES CHANGED:
 Check for:
 - Cross-task integration issues
 - Inconsistent patterns between tasks
-- Missing tests
+- Test coverage completeness:
+  * Unit tests for all new functions/classes
+  * Integration tests for cross-module interactions
+  * E2E tests for user-facing flows
+  * Tests follow project directory structure
 - Anything that would break in production
 
 Report findings with confidence scores. Only report >= 80."
@@ -184,7 +257,7 @@ Run via parallel Bash tool calls. Review each independently.
 Is the task...
   Touching 1-3 files with clear spec?        → Cursor (composer-2-fast)
   A rename, add attributes, CRUD?             → Cursor (composer-2-fast)
-  Writing tests for existing code?            → Cursor (composer-2-fast)
+  Writing tests (unit/integration/E2E)?       → Cursor (composer-2-fast)
   Multi-file architecture decision?           → Claude (native)
   Security-critical (auth, crypto, tokens)?   → Claude (native)
   Requires reading many files to understand?  → Claude (native)
@@ -220,8 +293,10 @@ On macOS: plays a chime + speaks the task name. On Linux: desktop notification o
 
 ## Red Flags
 
+- **Never** skip TDD — write failing tests BEFORE implementation
 - **Never** skip reviews (spec OR quality)
 - **Never** proceed with unfixed review issues
+- **Never** mark a task complete without passing tests
 - **Never** send full plan to Cursor (scope to THIS task only)
 - **Never** use anything other than `composer-2-fast` for implementation
 - **Never** upgrade Cursor model for complex tasks — do it yourself as Claude
