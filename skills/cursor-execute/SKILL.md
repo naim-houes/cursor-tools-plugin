@@ -61,7 +61,12 @@ For each task, assess complexity:
 
 ### 2. TDD: Write Failing Tests First
 
-Before ANY implementation, write tests. This applies to every task that produces testable code.
+Before implementation, check the task's `TDD:` field from the plan:
+- **TDD: yes** — write failing tests first, then implement (full TDD cycle below)
+- **TDD: no** — skip this step, go straight to implementation (task has no testable behavior)
+- **TDD: n/a** — this task IS a test task (integration/E2E), just write and run the tests
+
+For tasks with `TDD: yes`, write tests first. This applies to every task that produces testable code.
 
 **Test types required (when applicable):**
 

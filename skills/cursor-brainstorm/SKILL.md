@@ -115,12 +115,24 @@ Read the results. Use them to inform your questions and design decisions.
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
 
+**Testing strategy question:**
+
+During the clarifying questions phase, ask the user about testing needs. This is a required question — present it as multiple choice:
+
+> "What level of testing do you need for this feature?"
+> - **A) Unit tests only** — isolated tests for new functions/classes
+> - **B) Unit + Integration** — also test how modules interact
+> - **C) Full coverage (Unit + Integration + E2E)** — also test user-facing flows end-to-end
+> - **D) No tests needed** — config changes, docs, refactors with no behavior change
+
+Use the answer to determine TDD requirements in the plan. Not every task needs TDD — config changes, documentation, static assets, simple renames, and pure refactors with existing test coverage don't need new tests.
+
 **Presenting the design:**
 
 - Once you believe you understand what you're building, present the design
 - Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
 - Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
+- Cover: architecture, components, data flow, error handling, testing strategy
 - Be ready to go back and clarify if something doesn't make sense
 
 **Design for isolation and clarity:**
@@ -197,25 +209,39 @@ Break the design into independent tasks:
 - Files: src/foo.ts, src/bar.ts
 - What: [specific description]
 - Complexity: simple | standard | complex
-- TDD:
-  - Unit tests: tests/foo.test.ts, tests/bar.test.ts (mirror project structure)
-  - Integration tests: tests/integration/foo-bar.test.ts (if task connects modules)
-  - E2E tests: tests/e2e/flow-name.test.ts (if task modifies user-facing flow)
+- TDD: yes — unit tests: tests/foo.test.ts, tests/bar.test.ts
 
 ### Task 2: [Name]
-...
+- Files: src/config.ts
+- What: [config change, no behavior change]
+- Complexity: simple
+- TDD: no — config-only change, no testable behavior
+
+### Task N: Integration Tests
+- Files: tests/integration/feature-name.test.ts
+- What: test interactions between [module A] and [module B]
+- Complexity: standard
+- TDD: n/a — this IS the test task
+
+### Task N+1: E2E Tests
+- Files: tests/e2e/flow-name.test.ts
+- What: test full user flow for [workflow]
+- Complexity: standard
+- TDD: n/a — this IS the test task
 ```
 
 **Mark each task's complexity:**
 - **simple/standard** → Cursor (`composer-2-fast`) during execution
 - **complex** → Claude handles directly during execution
 
-**TDD is mandatory.** Every task that produces testable code must specify:
-- **Unit tests** — always required for new functions/classes, following project test directory structure
-- **Integration tests** — required when the task connects modules, APIs, or services
-- **E2E tests** — required when the task adds/modifies a user-facing workflow
+**TDD applies per-task based on the testing strategy agreed during brainstorming:**
+- **TDD: yes** — task produces testable code. Write failing unit tests BEFORE implementation, following project test directory structure.
+- **TDD: no** — task doesn't need tests (config changes, docs, static assets, renames, refactors with existing coverage). Mark explicitly so the executor knows to skip.
+- **TDD: n/a** — task IS a test task (integration or E2E).
 
-Tests are written BEFORE implementation (TDD). Cursor handles test writing via `composer-2-fast`.
+**Integration and E2E tests are separate tasks** added at the end of the plan when the testing strategy requires them. This keeps implementation tasks focused and lets test tasks reference the completed code.
+
+Test writing is delegated to Cursor (`composer-2-fast`).
 
 ## Phase 9: Transition to Execution
 
