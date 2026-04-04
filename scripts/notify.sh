@@ -21,7 +21,7 @@
 
 TASK="${1:-task}"
 STATUS="${2:-complete}"
-PORT="${CURSOR_NOTIFY_PORT:-9876}"
+PORT="${CURSOR_NOTIFY_PORT:-9878}"
 VOICE="${CURSOR_NOTIFY_VOICE:-Samantha}"
 
 # ── Mac: local notification ───────────────────────────

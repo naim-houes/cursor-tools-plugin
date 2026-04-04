@@ -16,7 +16,7 @@
 #     User ec2-user
 #     RemoteForward 9876 localhost:9876
 
-PORT="${1:-9876}"
+PORT="${1:-9878}"
 VOICE="${CURSOR_NOTIFY_VOICE:-Samantha}"
 
 echo "cursor-tools notify listener on port $PORT"
